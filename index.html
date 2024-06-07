@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Rest Countries</title>
+    <script src="https://unpkg.com/vue@3"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Josefin+Sans:ital,wght@0,100..700;1,100..700&family=Nunito+Sans:ital,opsz,wght@0,6..12,200..1000;1,6..12,200..1000&family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&family=Rubik:ital,wght@0,300..900;1,300..900&family=Space+Grotesk:wght@300..700&family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css" integrity="sha512-NhSC1YmyruXifcj/KFRWoC561YpHpc5Jtzgvbuzx5VozKpWvQ+4nXhPdFgmx8xqexRcpAglTj9sIBWINXa8x5w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/@dotlottie/player-component@latest/dist/dotlottie-player.mjs" type="module"></script> 
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        * {
+            font-family: "Rubik", sans-serif;
+        }
+
+        html,
+        body {
+            height: 100%;
+        }
+
+        ::-webkit-scrollbar {
+            visibility: hidden;
+            opacity: 0;
+            width: 0;
+        }
+
+        .select {
+            width: 100%;
+            padding: 0.75rem 0.75rem 0.75rem 1.25rem;
+            appearance: none;
+            background-repeat: no-repeat;
+            background-position: right 1.25rem top 50%;
+            background-size: 0.65rem auto;
+        }
+
+        .arrow-light {
+            background-image: url("arrow-light.png");
+        }
+
+        .arrow-dark {
+            background-image: url("arrow-dark.png");
+        }
+
+        .gap-card {
+            column-gap: calc(20% / 3);
+
+        }
+
+        .loading-screen {
+            display: block; 
+            overflow-y:hidden; 
+            background: rgba(255,255,255,0.3); 
+            position: fixed; 
+            z-index: 999;
+        }
+
+        option{
+            height: 50px;
+            Width: 250px;
+            line-height: 35px !important;
+        }
+
+    </style>
+</head>
+
+<body>
+    <div class="h-full" id="app">
+        <div class="overflow-hidden" id="loading" :class="isLoading ? 'block' : 'hidden'">
+            <div class="flex justify-center align-center h-full w-full loading-screen">
+                <iframe style="width: 300px; height: 300px;" src="https://lottie.host/embed/50088c40-c1ec-4ea5-ac8e-aa5df1c63eee/4vBmNl4wJr.json"></iframe>
+            </div>
+        </div>
+        <div class="flex flex-col h-max" :class="darkTheme ? 'bg-gray-800' : 'bg-gray-200'">
+            <div class="h-16 w-full flex flex-row justify-between items-center px-24 shadow" :class="darkTheme ? 'bg-slate-700' : 'bg-gray-50'">
+                <p class="text-xl font-medium tracking-wide" :class="darkTheme ? 'text-gray-50' : 'text-gray-900'">Where in the world?</p>
+                <button @click="changeTheme()">
+                    <div class="flex flex-row items-center gap-2" v-if="darkTheme">
+                        <i class="fa-solid fa-sun text-gray-50"></i>
+                        <p class="text-gray-50 text-sm">Light Mode</p>
+                    </div>
+                    <div class="flex flex-row items-center gap-2" v-else>
+                        <i class="fa-regular fa-moon text-gray-900"></i>
+                        <p class="text-sm text-gray-900">Dark Mode</p>
+                    </div>
+                </button>
+            </div>
+            <div class="flex flex-col px-24 py-10" :class="datailTab ? 'hidden' : 'block'">
+                <div class="flex flex-row justify-between items-center">
+                    <div class="flex flex-row items-center gap-5 rounded shadow py-3 px-7 w-4/12" :class="darkTheme ? 'bg-slate-700' : 'bg-gray-50'">
+                        <i class="fa-solid fa-magnifying-glass" :class="darkTheme ? 'text-gray-50' : 'text-gray-900' "></i>
+                        <input class="bg-transparent text-sm focus:outline-none" placeholder="Search for a country..." :class="darkTheme ? 'text-gray-50' : 'text-gray-900' " v-model="search" @keypress.enter="searchCountry">
+                    </div>
+                    <select class="select rounded shadow text-sm max-w-44 shadow" :class="darkTheme ? 'bg-slate-700 text-gray-50 arrow-light' : 'bg-gray-50 text-gray-900 arrow-dark'" @change="onChange($event)" aria-label="State">
+                        <option disabled selected hidden>Filter by Region</option>
+                        <option value="africa">Africa</option>
+                        <option value="america">America</option>
+                        <option value="asia">Asia</option>
+                        <option value="europe">Europe</option>
+                        <option value="oceania">Oceania</option>
+                    </select>
+                </div>
+            </div>
+            <div class="flex flex-wrap justify-start px-24 pb-16 gap-y-16 w-full gap-card" :class="datailTab ? 'hidden' : 'block'">
+                <div class="w-1/5 flex flex-col rounded overflow-hidden shadow cursor-pointer" :class="darkTheme ? 'bg-slate-700 text-gray-50' : 'bg-gray-50 text-gray-900'" v-for="(list, index) in allCountries" :key="index" @click="detailCountry(list.cca3)">
+                    <img class="aspect-[3/2]" :src = list.flags.png alt="" />
+                    <div class="flex flex-col px-6 gap-3 pt-4 pb-8">
+                        <div class="font-semibold text-sm"> {{ list.name.common }} </div>
+                        <div class="flex flex-col font-medium text-xs">
+                            <div>Population: <span class="font-light"> {{ list.population.toLocaleString("en") }} </span></div>
+                            <div>Region: <span class="font-light"> {{ list.region }} </span></div>
+                            <div>Capital: <span class="font-light"> {{ list.capital.join(', ') }} </span></div>
+                        </div>
+                    </div>                    
+                </div>
+            </div>
+            <div class="flex flex-col w-full px-24 py-10 gap-10 h-[91vh]" :class="{'block': datailTab, 'hidden': !datailTab, 'text-gray-50':  darkTheme, 'text-gray-900':  !darkTheme,}" >
+                <button class="rounded shadow px-6 py-2 w-28 text-xs font-light" :class="darkTheme ? 'bg-slate-700' : 'bg-gray-50'" @click="backToMain"><i class="fa-solid fa-arrow-left-long"></i>&nbsp;&nbsp;Back</button>
+                <div class="flex flex-row gap-28 pt-4">
+                    <div class="w-1/2">
+                        <img class="w-full" :src = detailData.flags.png  alt="" />
+                    </div>
+                    <div class="w-1/2 flex flex-col justify-center gap-5">
+                        <div class="font-bold text-sm text-xl"> {{ detailData.name.common }} </div>
+                        <div class="flex flex-row gap-32 font-medium text-sm">
+                            <div class="flex flex-col gap-1">
+                                <div>Native Name: <span class="font-light"> {{ Object.values(detailData.name.nativeName)[0]?.common }} </span></div>
+                                <div>Population: <span class="font-light"> {{ detailData.population }} </span></div>
+                                <div>Region: <span class="font-light"> {{ detailData.region }} </span></div>
+                                <div>Sub Region: <span class="font-light"> {{ detailData.subregion }} </span></div>
+                                <div>Capital: <span class="font-light"> {{ (detailData.capital).join(', ') }} </span></div>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <div>Top Level Domain: <span class="font-light"> {{ (detailData.tld).join(', ') }} </span></div>
+                                <div>Currencies: <span class="font-light"> {{ (Object.keys(detailData.currencies)).join(', ') }} </span></div>
+                                <div>Languages: <span class="font-light"> {{ (Object.keys(detailData.languages)).join(', ') }} </span></div>
+                            </div>
+                        </div>
+                        <div class="flex flex-row items-center mt-4">
+                            <div class="font-medium text-xs">Borders:</div>
+                            <div class="flex flex-row gap-4 px-4" v-if="(detailData.borders).length">
+                                <button class="rounded shadow px-4 py-1 w-max w-28 text-xs font-light" :class="darkTheme ? 'bg-slate-700' : 'bg-gray-50'"  v-for="(list, index) in detailData.borders" :key="index" @click="detailCountry(list.cca3)">{{ list.name }}</button>
+                            </div>
+                            <div class="pl-4" v-else>-</div>
+                        </div>
+                    </div>
+                </div>             
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        Vue.createApp({
+            data() {
+                return {
+                    darkTheme: true,
+                    isLoading: true,
+                    allCountries: [],
+                    search: '',
+                    datailTab: false,
+                    detailData: {
+                        flags: {
+                            png: '',
+                            svg: '',
+                            alt: ''
+                        },
+                        name: {
+                            common: '',
+                            official: '',
+                            nativeName: {}
+                        },
+                        tld: [],
+                        cca3: '',
+                        currencies: {},
+                        capital: [],
+                        region: '',
+                        subregion: '',
+                        languages: {},
+                        borders: [],
+                        population: '',
+
+                    },
+                };
+            },
+
+            mounted() {
+                axios
+                .get('https://restcountries.com/v3.1/all', {
+                    params: {
+                        fields: 'name,cca3,population,region,capital,flags'
+                    },
+                    timeout: 10000,
+                })
+                .then(response => {
+                    this.isLoading = !this.isLoading;
+                    listCountries = response.data.slice(0, 8);
+                    
+                    listCountries.forEach(list => {
+                        this.allCountries.push(list);
+                    });
+
+                })
+                .catch(error => {
+                    this.isLoading = !this.isLoading;
+                    if (error.code === 'ECONNABORTED') {
+                        Swal.fire({
+                            confirmButtonColor: '#334155',
+                            title: 'Request timed out'
+                        });
+                    } else {
+                        Swal.fire({
+                            confirmButtonColor: '#334155',
+                            title: error.message
+                        });
+                    }
+                });
+
+            },
+
+            methods: {
+                changeTheme() {
+                    this.darkTheme = !this.darkTheme;
+                },
+
+                async detailCountry(country) {
+                    try {
+                        this.isLoading = !this.isLoading;
+                        const selectedCountry = await axios
+                            .get('https://restcountries.com/v3.1/alpha/'+country, {
+                                params: {
+                                    fields: 'name,cca3,population,region,subregion,capital,tld,currencies,languages,borders,flags'
+                                },
+                                timeout: 10000,
+                            });
+
+                        this.detailData = selectedCountry.data;
+                        
+                        let borders = [];
+                        if ((selectedCountry.data.borders).length) {
+                            borders = await axios
+                                .get('https://restcountries.com/v3.1/alpha', {
+                                    params: {
+                                        codes: (selectedCountry.data.borders).join(','),
+                                        fields: 'name,cca3'
+                                    },
+                                    timeout: 10000,
+                                });
+                            
+                            this.detailData.borders = (borders.data).map((border) => {
+                                return {
+                                    name: border.name.common,
+                                    cca3: border.cca3
+                                }
+                            })
+                        }
+                        
+                        this.isLoading = !this.isLoading;
+                        this.datailTab = !this.datailTab;
+                            
+                    } catch (error) {
+                        this.isLoading = !this.isLoading;
+                        if (error.code === 'ECONNABORTED') {
+                            Swal.fire({
+                                confirmButtonColor: '#334155',
+                                title: 'Request timed out'
+                            });
+                        } else {
+                            Swal.fire({
+                                confirmButtonColor: '#334155',
+                                title: error.message
+                            });
+                        }
+                        
+                    }
+                    
+                },
+
+                backToMain() {
+                    this.datailTab = !this.datailTab;
+                },
+
+                searchCountry() {
+                    this.isLoading = !this.isLoading;
+
+                    axios
+                    .get('https://restcountries.com/v3.1/name/'+this.search)
+                    .then(response => {
+                        this.isLoading = !this.isLoading;
+                        this.detailData = response.data;
+                    })
+                    .catch(error => {
+                        this.isLoading = !this.isLoading;
+                        if (error.code === 'ECONNABORTED') {
+                            Swal.fire({
+                                confirmButtonColor: '#334155',
+                                title: 'Request timed out'
+                            });
+                        } else {
+                            Swal.fire({
+                                confirmButtonColor: '#334155',
+                                title: error.message
+                            });
+                        }
+                    });
+                },
+
+                onChange(event) {
+                    this.isLoading = !this.isLoading;
+
+                    axios
+                    .get('https://restcountries.com/v3.1/region/'+event.target.value, {
+                        timeout: 10000,
+                    })
+                    .then(response => {
+                        this.allCountries = [];
+                        this.isLoading = !this.isLoading;
+                        listCountries = response.data.slice(0, 8);
+                        
+                        listCountries.forEach(list => {
+                            this.allCountries.push(list);
+                        });
+
+                    })
+                    .catch(error => {
+                        this.isLoading = !this.isLoading;
+                        if (error.code === 'ECONNABORTED') {
+                            Swal.fire({
+                                confirmButtonColor: '#334155',
+                                title: 'Request timed out'
+                            });
+                        } else {
+                            Swal.fire({
+                                confirmButtonColor: '#334155',
+                                title: error.message
+                            });
+                        }
+                    });
+                }
+            }
+
+        }).mount('#app');
+    </script>
+</body>
+
+</html>
